@@ -46,13 +46,10 @@ library(wikilake)
 #  good_cols <- data.frame(as.numeric(as.character(apply(milakes,
 #                                              2, function(x) sum(!is.na(x))))))
 #  good_cols <- cbind(good_cols, names(milakes))
-#  # good_cols[order(good_cols[,1], decreasing = TRUE),]
-#  # hist(good_cols[,1])
 #  good_cols <- good_cols[good_cols[,1] > 20 ,2]
 #  good_cols <- as.character(good_cols)
 #  
 #  milakes <- res_df[,good_cols]
-#  devtools::use_data(milakes)
 
 ## ----echo = FALSE--------------------------------------------------------
 data(milakes)
