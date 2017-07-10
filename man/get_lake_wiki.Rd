@@ -4,10 +4,12 @@
 \alias{get_lake_wiki}
 \title{get_lake_wiki}
 \usage{
-get_lake_wiki(lake_name)
+get_lake_wiki(lake_name, cond = NA)
 }
 \arguments{
 \item{lake_name}{character}
+
+\item{cond}{character stopping condition}
 }
 \description{
 get_lake_wiki
@@ -17,4 +19,3 @@ get_lake_wiki
 get_lake_wiki("Lake Nipigon")
 }
 }
-

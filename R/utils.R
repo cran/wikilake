@@ -1,6 +1,6 @@
 #' dms2dd
 #' @description Convert numeric coordinate vectors in degrees, minutes, and seconds to decimal degrees
-#' @param x numeric vector of length 3 corresonding to degrees, minutes, and seconds
+#' @param x numeric vector of length 3 corresponding to degrees, minutes, and seconds
 #' @export
 #' @examples
 #' dt <- rbind(c(25,12,53.66),c(-80,32,00.61))
@@ -25,7 +25,7 @@ tidy_lake_df <- function(lake){
   lon <- as.numeric(strsplit(res$Coordinates, ",")[[1]][2])
   res$Lat <- lat
   res$Lon <- lon
-  res <- res[,which(names(res) != "Coordinates")]
+  res <- res[,!(names(res) %in% c("Coordinates", "- coordinates"))]
 
   # tidy depths
   depth_col_pos <- grep("depth", names(res))
@@ -35,7 +35,9 @@ tidy_lake_df <- function(lake){
 
     has_meters <- grep("m", depths)
     is_meters_first <- stringr::str_locate(depths[has_meters], "m")[1] <
-                       stringr::str_locate(depths[has_meters], "ft")[1]
+                       max(stringr::str_locate(depths[has_meters], "ft")[1],
+                           stringr::str_locate(depths[has_meters], "feet")[1],
+                           na.rm = TRUE)
 
     if(is_meters_first){
       depths[has_meters] <- stringr::str_extract(depths[has_meters],

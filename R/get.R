@@ -4,7 +4,9 @@
 #' @param ... arguments passed to maps::map
 #' @export
 #' @examples \dontrun{
-#' lake_wiki("Lake George (Michigan–Ontario)")
+#' lake_wiki("Lake Peipsi")
+#' lake_wiki("Flagstaff Lake (Maine)")
+#' lake_wiki("Lake George (Michigan-Ontario)")
 #' lake_wiki("Lake Michigan", map = TRUE, "usa")
 #' lake_wiki("Lac La Belle, Michigan")
 #' lake_wiki("Lake Antoine")
@@ -52,40 +54,82 @@ lake_wiki <- function(lake_name, map = FALSE, ...){
 #' @import rvest
 #' @importFrom xml2 read_html
 #' @param lake_name character
+#' @param cond character stopping condition
 #' @examples \dontrun{
 #' get_lake_wiki("Lake Nipigon")
 #' }
-get_lake_wiki <- function(lake_name){
+get_lake_wiki <- function(lake_name, cond = NA){
   # display page link
   page_metadata <- page_info("en","wikipedia", page = lake_name)$query$pages
 
   page_link <- page_metadata[[1]][["fullurl"]]
   message(paste0("Retrieving data from: ", page_link))
 
-  # get content
-  res <- WikipediR::page_content("en", "wikipedia", page_name = lake_name,
-                                 as_wikitext = FALSE)
-  res <- res$parse$text[[1]]
-  res <- xml2::read_html(res, encoding = "UTF-8")
+  get_content <- function(lake_name){
+    res <- WikipediR::page_content("en", "wikipedia", page_name = lake_name,
+                                   as_wikitext = FALSE)
+    res <- res$parse$text[[1]]
+    res <- xml2::read_html(res, encoding = "UTF-8")
+    res
+  }
 
-  # is_redirect <- function(){
-  #   length(grep("redirect",
-  #               rvest::html_attr(rvest::html_nodes(res, "div"),
-  #                                "class"))) >  0
-  # }
+  is_redirect <- function(res){
+    length(
+      grep("redirect",
+           rvest::html_attr(rvest::html_nodes(res, "div"), "class"))
+      ) >  0
+  }
+
+  page_redirect <- function(res){
+    rvest::html_attr(rvest::html_nodes(res, "a"), "title")[1]
+  }
+
+  res <- get_content(lake_name)
+
+  if(is_redirect(res)){
+    lake_name <- page_redirect(res)
+    message(paste0("Attempting redirect to '", lake_name, "'"))
+    res <- get_content(lake_name)
+  }
+
+  is_not_lake_page <- function(res, meta_index){
+    no_meta_index <- length(meta_index) == 0
+    if(no_meta_index) meta_index <- 1
+    res <- rvest::html_table(res[meta_index])[[1]]
+
+    no_meta_index & !any(suppressWarnings(stringr::str_detect(unlist(res), c("lake",
+                                          "tributaries",
+                                          "outflow",
+                                          "elevation",
+                                          "coordinates"))))
+  }
 
   res <- tryCatch({
+
     res <- rvest::html_nodes(res, "table")
-    meta_index <- grep("infobox", rvest::html_attr(res, "class"))
+    meta_index <- grep("infobox vcard", rvest::html_attr(res, "class"))
+
+    if(is_not_lake_page(res, meta_index)) stop(cond)
+
+    if(length(meta_index) == 0) meta_index <- 1
+
     res <- rvest::html_table(res[meta_index])[[1]]
-    res <- apply(res, 2,
+
+    # create missing names
+    # rm rows that are just repeating the lake name
+    if(all(nchar(names(res)) <  3)){
+      names(res) <- res[1,]
+    }
+    res <- res[!apply(res, 1, function(x) all(x == names(res)[1])),]
+
+    res <- suppressWarnings(apply(res, 2,
                         function(x) stri_encode(stri_trans_general(x,
-                                      "Latin-ASCII"), "", "UTF-8"))
+                                      "Latin-ASCII"), "", "UTF-8")))
   },
   error = function(cond){
     message("'", paste0(lake_name,
                         "' is missing a metadata table or
-                        points to a redirect and does not have its own page"))
+                        does not have its own page"))
     return(NA)
   }
   )
@@ -108,7 +152,7 @@ get_lake_wiki <- function(lake_name){
       coords <- paste(unlist(coords), collapse = ",")
       coords <- strsplit(coords, ",")[[1]]
 
-      coords <- coords[!(1:length(coords) %in%
+      coords <- coords[!(seq_len(length(coords)) %in%
                            c(which(nchar(coords) == 0),
                              grep("W", coords),
                              grep("E", coords),
