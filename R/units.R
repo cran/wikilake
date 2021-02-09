@@ -50,7 +50,7 @@ unit_key_ <- function(){
 tidy_units <- function(res){
   unit_key <- unit_key_()
 
-  known_units <- c("m", "km2", "years", "sq mi", "ha", "m3", "acres", "sq. km", "days")
+  known_units <- c("m", "km2", "years", "sq mi", "ha", "m3", "acres", "sq. km", "days", "acre feet")
 
   numeric_cols <- unit_key$Variable[unit_key$format == "n"]
   numeric_cols <- names(res) %in% numeric_cols
@@ -67,8 +67,11 @@ tidy_units <- function(res){
     non_specified_cols <- numeric_cols[!(numeric_cols %in% specified_cols)]
 
     if(length(non_specified_cols) > 0){
-      res[,non_specified_cols] <- unit_key[
-        unit_key$Variable %in% non_specified_cols,]
+       tryCatch({
+         res[,non_specified_cols] <- unit_key[unit_key$Variable %in% non_specified_cols,]
+      }, warning = function(w) {
+        res
+        })
     }
 
     # strip converted units
@@ -102,17 +105,22 @@ tidy_units <- function(res){
     # assign units using the units package
     # res[,numeric_cols]
     quantities <- lapply(seq_len(length(numeric_cols)), function(x){
+
                           quantity <- res[,numeric_cols[x]]
                           quantity <- gsub(",", "", quantity)
                           quantity <- strsplit(quantity, " ")[[1]]
 
+                          tryCatch(
                           units::set_units(as.numeric(quantity[1][1]),
                                            units::as_units(quantity[2]),
-                                           mode = "standard")
+                                           mode = "standard"),
+                          error = function(e){
+                            trimws(paste(quantity, collapse = " "))
+                            })
     })
 
     names(quantities) <- numeric_cols
-    quantities <- as.data.frame(quantities)
+    quantities        <- as.data.frame(quantities)
     names(quantities) <- numeric_cols
 
     res[,numeric_cols] <- quantities

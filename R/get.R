@@ -1,7 +1,10 @@
 #' lake_wiki
 #' @param lake_name character
 #' @param map logical produce map of lake location?
+#' @param clean logical enforce standardized units following wikilake::unit_key_()?
 #' @param ... arguments passed to maps::map
+#' @importFrom tidyr pivot_wider
+#' @importFrom dplyr mutate matches
 #' @export
 #' @examples \dontrun{
 #' lake_wiki("Lake Peipsi")
@@ -24,7 +27,10 @@
 #' lake_wiki("Lake Mendota", map = TRUE, "usa")
 #' lake_wiki("Lake Nipigon", map = TRUE, regions = "Canada")
 #' lake_wiki("Trout Lake (Wisconsin)")
-#' lake_wiki("Rutland Water")
+#'
+#' # a vector of lake names
+#' lake_wiki(c("Lake Mendota","Trout Lake (Wisconsin)"))
+#' lake_wiki(c("Lake Mendota","Trout Lake (Wisconsin)"), map = TRUE)
 #'
 #' # throws warning on redirects
 #' lake_wiki("Beals Lake")
@@ -33,16 +39,38 @@
 #' lake_wiki("Rainbow Lake (Waterford Township, Michigan)")
 #' }
 
-lake_wiki <- function(lake_name, map = FALSE, ...){
+lake_wiki <- function(lake_name, map = FALSE, clean = TRUE, ...){
 
-  res <- get_lake_wiki(lake_name)
+  .lake_wiki <- function(lake_name, ...){
+    res <- get_lake_wiki(lake_name)
+    if(!is.null(res)){
+      res <- tidy_lake_df(res)
+    }
+
+    res
+  }
+
+  res <- lapply(lake_name, function(x) .lake_wiki(x, map = map))
+  res <- res[sapply(res, function(x) !is.null(x))]
+
+  res <- data.frame(dplyr::bind_rows(
+    lapply(res, function(x) {
+      tidyr::pivot_wider(
+      data.frame(
+      field = names(x),
+      values = t(x)),
+      names_from = "field", values_from = "values")
+    })
+    ), check.names = FALSE)
+
+  res <- dplyr::mutate(res, dplyr::across(dplyr::matches("Lon|Lat"), as.numeric))
 
   if(map){
     map_lake_wiki(res, ...)
   }
 
-  if(!is.null(res)){
-    res <- tidy_lake_df(res)
+  if(clean){
+    res <- lake_clean(res)
   }
 
   res
@@ -105,15 +133,18 @@ get_lake_wiki <- function(lake_name, cond = NA){
     # format coordinates ####
     has_multiple_rows <- !is.null(nrow(res))
     if(has_multiple_rows){
-      coords <- res[which(res[,1] == "Coordinates"), 2]
+      coords_raw <- res[which(res[,1] == "Coordinates"), 2]
     }else{
       coords <- res[2]
     }
 
-    is_tidy_coords <- nchar(coords) < 33
+    is_tidy_coords <- nchar(coords_raw) < 33
 
     if(!is_tidy_coords){
-      coords <- strsplit(coords, "\\/")[[1]]
+      coords <- strsplit(coords_raw, "\\/")[[1]]
+      coords <- sapply(coords, trimws)
+      coords <- coords[stringr::str_starts(coords, "\\d")]
+
       coords <- sapply(coords, function(x) strsplit(x, "Coordinates: "))
       coords <- sapply(coords, function(x) strsplit(x, " "))
       coords <- paste(unlist(coords), collapse = ",")
@@ -131,7 +162,7 @@ get_lake_wiki <- function(lake_name, cond = NA){
       if(any(nchar(coords) > 5)){
         coords <- sapply(gsub(";", "", coords),
                     function(x) substring(x, 1, nchar(x) - 1))
-        coords <- paste(as.numeric(coords), collapse = ",")
+        coords <- suppressWarnings(paste(as.numeric(coords), collapse = ","))
       }else{
         coords <- paste(as.numeric(gsub(";", "", coords)), collapse = ",")
       }
