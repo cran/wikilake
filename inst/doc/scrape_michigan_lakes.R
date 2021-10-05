@@ -3,7 +3,7 @@ library(wikilake)
 
 ## ----category url, eval = FALSE-----------------------------------------------
 #  res <- WikipediR::page_info("en", "wikipedia",
-#          page = "Category:Lakes of Michigan")
+#    page = "Category:Lakes of Michigan")
 
 ## ----scrape names, eval = FALSE-----------------------------------------------
 #  res <- xml2::read_html(res$query$pages[[1]]$canonicalurl)
@@ -22,31 +22,30 @@ library(wikilake)
 #  res <- lapply(res, lake_wiki)
 #  
 #  # remove missing coordinates
-#  res <- res[unlist(lapply(res, function(x) !is.na(x[,"Lat"])))]
+#  res <- res[unlist(lapply(res, function(x) !is.na(x[, "Lat"])))]
 
 ## ----collapse list to data.frame, eval = FALSE--------------------------------
 #  res_df_names <- unique(unlist(lapply(res, names)))
 #  res_df <- data.frame(matrix(NA, nrow = length(res),
-#                                  ncol = length(res_df_names)))
+#    ncol = length(res_df_names)))
 #  names(res_df) <- res_df_names
-#  for(i in seq_len(length(res))){
+#  for (i in seq_len(length(res))) {
 #    dt_pad <- data.frame(matrix(NA, nrow = 1,
-#                ncol = length(res_df_names) - ncol(res[[i]])))
+#      ncol = length(res_df_names) - ncol(res[[i]])))
 #    names(dt_pad) <- res_df_names[!(res_df_names %in% names(res[[i]]))]
 #    dt <- cbind(res[[i]], dt_pad)
-#    dt <- dt[,res_df_names]
-#    res_df[i,] <- dt
+#    dt <- dt[, res_df_names]
+#    res_df[i, ] <- dt
 #  }
-#  
 
 ## ----echo=FALSE, eval=FALSE---------------------------------------------------
 #  good_cols <- data.frame(as.numeric(as.character(apply(res_df,
-#                                              2, function(x) sum(!is.na(x))))))
+#    2, function(x) sum(!is.na(x))))))
 #  good_cols <- cbind(good_cols, names(res_df))
-#  good_cols <- good_cols[good_cols[,1] > 20 ,2]
+#  good_cols <- good_cols[good_cols[, 1] > 20, 2]
 #  good_cols <- as.character(good_cols)
 #  
-#  res_df <- res_df[,good_cols]
+#  res_df <- res_df[, good_cols]
 
 ## ----echo = FALSE-------------------------------------------------------------
 data(milakes)
@@ -55,10 +54,10 @@ res_df <- milakes
 ## ----map lakes, fig.height=6,fig.align="center"-------------------------------
 library(sp)
 
-coordinates(res_df) <- ~Lon + Lat
-map("state", region = "michigan", mar = c(0,0,0,0))
+coordinates(res_df) <- ~ Lon + Lat
+map("state", region = "michigan", mar = c(0, 0, 0, 0))
 points(res_df, col = "red", pch = 19)
 
-## ----lake depth distribution, eval=FALSE, echo=FALSE--------------------------
-#  hist(log(as.numeric(res_df$`Max. depth`)))
+## ----lake depth distribution--------------------------------------------------
+hist(log(res_df$`Max. depth`), main = "", xlab = "Max depth (log(m))")
 

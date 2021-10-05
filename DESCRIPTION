@@ -1,8 +1,8 @@
 Package: wikilake
 Title: Scrape Lake Metadata Tables from Wikipedia
-Version: 0.5.0
+Version: 0.6.0
 Authors@R: c(
-    person("Joseph", "Stachelek", email = "stachel2@msu.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-5924-2464"))
+    person("Jemma", "Stachelek", email = "stachel2@msu.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-5924-2464"))
     )
 Description: Scrape lake metadata tables from Wikipedia <https://www.wikipedia.org/>. 
 Imports: rvest, stringi, WikipediR, xml2, sp, graphics, stringr,
@@ -14,11 +14,11 @@ License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
-Suggests: knitr, rmarkdown, testthat
+Suggests: knitr, rmarkdown, testthat, reticulate
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2021-02-09 17:31:22 UTC; julie
-Author: Joseph Stachelek [aut, cre] (<https://orcid.org/0000-0002-5924-2464>)
-Maintainer: Joseph Stachelek <stachel2@msu.edu>
+Packaged: 2021-10-04 14:15:05 UTC; jemma
+Author: Jemma Stachelek [aut, cre] (<https://orcid.org/0000-0002-5924-2464>)
+Maintainer: Jemma Stachelek <stachel2@msu.edu>
 Repository: CRAN
-Date/Publication: 2021-02-09 17:50:03 UTC
+Date/Publication: 2021-10-05 07:10:02 UTC
